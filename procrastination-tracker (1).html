@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Procrastination Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --accent: #ff3c3c;
+    --accent2: #ff8c00;
+    --accent3: #00e5a0;
+    --text: #f0ede8;
+    --muted: #666;
+    --danger: #ff3c3c;
+    --warn: #ff8c00;
+    --ok: #00e5a0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2rem 3rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .logo-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .logo-title span {
+    color: var(--accent);
+  }
+
+  .logo-sub {
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 2rem;
+  }
+
+  .h-stat {
+    text-align: center;
+  }
+
+  .h-stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .h-stat-val.red { color: var(--accent); }
+  .h-stat-val.orange { color: var(--accent2); }
+  .h-stat-val.green { color: var(--accent3); }
+
+  .h-stat-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem 4rem;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* LEFT COLUMN */
+  .left-col { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  /* Add Task */
+  .add-task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .add-task-card::before {
+    content: 'NEW TASK';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  input[type="text"], select, input[type="date"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    padding: 0.65rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    flex: 1;
+  }
+
+  input[type="text"]:focus, select:focus, input[type="date"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  select option { background: var(--surface2); }
+
+  .btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    padding: 0.65rem 1.4rem;
+    transition: all 0.15s;
+    font-weight: 700;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: #ff6060;
+    transform: translateY(-1px);
+  }
+
+  .btn-sm {
+    font-size: 0.6rem;
+    padding: 0.3rem 0.7rem;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Task List */
+  .section-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  #task-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .task-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    transition: all 0.2s;
+    position: relative;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .task-item:hover { border-color: #333; background: #191919; }
+
+  .task-item.priority-high { border-left-color: var(--danger); }
+  .task-item.priority-medium { border-left-color: var(--warn); }
+  .task-item.priority-low { border-left-color: var(--ok); }
+
+  .task-item.done {
+    opacity: 0.4;
+    border-left-color: var(--muted) !important;
+  }
+
+  .task-item.done .task-name {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .task-check {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .task-check:hover { border-color: var(--accent3); }
+  .task-check.checked { background: var(--accent3); border-color: var(--accent3); }
+
+  .task-check.checked::after {
+    content: '✓';
+    font-size: 0.65rem;
+    color: #000;
+    font-weight: 700;
+  }
+
+  .task-body { min-width: 0; }
+
+  .task-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.25rem;
+  }
+
+  .task-meta {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .task-tag {
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid;
+  }
+
+  .tag-high { color: var(--danger); border-color: var(--danger); }
+  .tag-medium { color: var(--warn); border-color: var(--warn); }
+  .tag-low { color: var(--ok); border-color: var(--ok); }
+
+  .task-date {
+    font-size: 0.6rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .task-date.overdue {
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  .procrastination-badge {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.15rem 0.5rem;
+    background: var(--accent);
+    color: #fff;
+    animation: pulse 1.5s ease infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .btn-icon {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.15s;
+  }
+
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-icon.snooze:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .snooze-count {
+    font-size: 0.55rem;
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+    font-style: italic;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .empty-state-icon {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem;
+    opacity: 0.15;
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state p {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* RIGHT COLUMN */
+  .right-col { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+  }
+
+  .panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .panel-title .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 1s ease infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Shame meter */
+  .shame-meter-wrap {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
+  .shame-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .shame-bar-bg {
+    width: 100%;
+    height: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .shame-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ok), var(--warn), var(--danger));
+    transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+  }
+
+  .shame-bar-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: #fff;
+    opacity: 0.8;
+  }
+
+  .shame-score {
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem;
+    line-height: 1;
+    margin: 0.5rem 0 0.25rem;
+    color: var(--accent);
+  }
+
+  .shame-verdict {
+    text-align: center;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-style: italic;
+    min-height: 1.2em;
+  }
+
+  /* Habit streak */
+  .streak-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 0.75rem;
+  }
+
+  .streak-day {
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.45rem;
+    color: var(--muted);
+    cursor: default;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .streak-day.done-day { background: var(--accent3); border-color: var(--accent3); }
+  .streak-day.today { border-color: var(--accent); }
+  .streak-day.done-day.today { background: var(--accent3); border-color: #fff; }
+
+  .streak-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+
+  .streak-info strong {
+    color: var(--accent3);
+    font-size: 0.9rem;
+    font-family: 'Bebas Neue', sans-serif;
+  }
+
+  /* Confessions log */
+  .confession-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 220px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .confession-item {
+    font-size: 0.65rem;
+    color: var(--muted);
+    border-left: 2px solid var(--border);
+    padding-left: 0.75rem;
+    line-height: 1.5;
+    animation: slideIn 0.3s ease;
+  }
+
+  .confession-item .c-time {
+    color: var(--accent);
+    font-size: 0.55rem;
+    display: block;
+    margin-bottom: 0.1rem;
+  }
+
+  .confession-add {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .confession-add input {
+    font-size: 0.7rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Motivation quote */
+  .quote-box {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    padding: 1rem;
+    font-size: 0.7rem;
+    color: var(--text);
+    line-height: 1.6;
+    font-style: italic;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .quote-box:hover { border-left-color: var(--accent2); }
+
+  .quote-box::before {
+    content: '"';
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    position: absolute;
+    top: -0.5rem;
+    left: 0.5rem;
+    color: var(--accent);
+    opacity: 0.2;
+    line-height: 1;
+  }
+
+  .quote-author {
+    display: block;
+    font-size: 0.55rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    font-style: normal;
+  }
+
+  .quote-hint {
+    font-size: 0.5rem;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 0.4rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 0.75rem 1.25rem;
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    z-index: 1000;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  @media (max-width: 800px) {
+    main { grid-template-columns: 1fr; }
+    header { padding: 1rem 1.5rem; }
+    .logo-title { font-size: 2rem; }
+    main { padding: 1.5rem 1rem 3rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-title">PROCR<span>A</span>STINA<span>X</span></div>
+    <div class="logo-sub">Your personal shame dashboard</div>
+  </div>
+  <div class="header-stats">
+    <div class="h-stat">
+      <div class="h-stat-val red" id="stat-overdue">0</div>
+      <div class="h-stat-label">Overdue</div>
+    </div>
+    <div class="h-stat">
+      <div class="h-stat-val orange" id="stat-snoozed">0</div>
+      <div class="h-stat-label">Snoozed</div>
+    </div>
+    <div class="h-stat">
+      <div class="h-stat-val green" id="stat-done">0</div>
+      <div class="h-stat-label">Done</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="left-col">
+
+    <!-- Add Task -->
+    <div class="add-task-card">
+      <div class="input-row">
+        <input type="text" id="task-input" placeholder="What are you avoiding today?" maxlength="80">
+        <select id="priority-select">
+          <option value="high">🔴 High</option>
+          <option value="medium" selected>🟠 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+      </div>
+      <div class="input-row">
+        <input type="date" id="due-date">
+        <button class="btn btn-primary" onclick="addTask()">+ ADD TASK</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all', this)">ALL</button>
+        <button class="filter-btn" onclick="setFilter('active', this)">ACTIVE</button>
+        <button class="filter-btn" onclick="setFilter('done', this)">DONE</button>
+        <button class="filter-btn" onclick="setFilter('overdue', this)">OVERDUE</button>
+        <button class="filter-btn" onclick="setFilter('high', this)">HIGH PRIORITY</button>
+      </div>
+    </div>
+
+    <!-- Task List -->
+    <div>
+      <div class="section-label">Tasks</div>
+      <div id="task-list"></div>
+    </div>
+
+  </div>
+
+  <div class="right-col">
+
+    <!-- Shame Meter -->
+    <div class="panel">
+      <div class="panel-title"><span class="dot"></span> Procrastination Score</div>
+      <div class="shame-meter-wrap">
+        <div class="shame-label-row"><span>Productive</span><span>Hopeless</span></div>
+        <div class="shame-bar-bg">
+          <div class="shame-bar-fill" id="shame-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="shame-score" id="shame-score">0</div>
+      <div class="shame-verdict" id="shame-verdict">Add some tasks to begin...</div>
+    </div>
+
+    <!-- Motivation Quote -->
+    <div class="panel">
+      <div class="panel-title">Daily Dread Fuel</div>
+      <div class="quote-box" onclick="nextQuote()">
+        <p id="quote-text">Loading your daily dose of guilt...</p>
+        <span class="quote-author" id="quote-author">—</span>
+      </div>
+      <div class="quote-hint">↻ Click to get another one</div>
+    </div>
+
+    <!-- 21-Day Streak -->
+    <div class="panel">
+      <div class="panel-title">Completion Streak</div>
+      <div class="streak-grid" id="streak-grid"></div>
+      <div class="streak-info">
+        <span>Current streak: <strong id="streak-count">0</strong> days</span>
+        <span id="streak-status" style="color:var(--muted);font-size:0.6rem;"></span>
+      </div>
+    </div>
+
+    <!-- Confessions Log -->
+    <div class="panel">
+      <div class="panel-title">Excuses Log</div>
+      <div class="confession-list" id="confession-list"></div>
+      <div class="confession-add">
+        <input type="text" id="confession-input" placeholder="Type your excuse..." maxlength="100">
+        <button class="btn btn-primary btn-sm" onclick="addConfession()">LOG</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+let tasks = JSON.parse(localStorage.getItem('procraxtasks') || '[]');
+let confessions = JSON.parse(localStorage.getItem('procraconfess') || '[]');
+let streakData = JSON.parse(localStorage.getItem('procrastreak') || '{}');
+let quoteIdx = 0;
+let currentFilter = 'all';
+
+const QUOTES = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+  { text: "A year from now you may wish you had started today.", author: "Karen Lamb" },
+  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { text: "Done is better than perfect.", author: "Sheryl Sandberg" },
+  { text: "You cannot escape the responsibility of tomorrow by evading it today.", author: "Abraham Lincoln" },
+  { text: "Tomorrow is often the busiest day of the week.", author: "Spanish Proverb" },
+  { text: "How soon 'not now' becomes 'never'.", author: "Martin Luther" },
+  { text: "The most difficult thing is the decision to act. The rest is merely tenacity.", author: "Amelia Earhart" },
+  { text: "Someday is not a day of the week.", author: "Denise Brennan-Nelson" },
+];
+
+const VERDICTS = [
+  [0, "Actually productive! Who are you?"],
+  [10, "A light dusting of avoidance."],
+  [25, "Professionally distracted."],
+  [40, "Olympic-level excuse maker."],
+  [55, "Your future self is disappointed."],
+  [70, "The chaos is spreading."],
+  [85, "Full existential dread mode."],
+  [95, "Complete and utter disaster."],
+];
+
+// ─── SAVE ──────────────────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem('procraxtasks', JSON.stringify(tasks));
+  localStorage.setItem('procraconfess', JSON.stringify(confessions));
+  localStorage.setItem('procrastreak', JSON.stringify(streakData));
+}
+
+// ─── TASKS ─────────────────────────────────────────────────────────────────
+function addTask() {
+  const name = document.getElementById('task-input').value.trim();
+  const priority = document.getElementById('priority-select').value;
+  const due = document.getElementById('due-date').value;
+  if (!name) { showToast("Write the thing you are avoiding first."); return; }
+
+  tasks.unshift({
+    id: Date.now(),
+    name,
+    priority,
+    due: due || null,
+    done: false,
+    snoozeCount: 0,
+    createdAt: new Date().toISOString()
+  });
+
+  document.getElementById('task-input').value = '';
+  document.getElementById('due-date').value = '';
+  save();
+  render();
+  showToast('Task added. Now actually do it.');
+}
+
+function toggleDone(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  task.done = !task.done;
+  if (task.done) {
+    // Mark today as done in streak
+    const today = todayKey();
+    streakData[today] = true;
+    showToast('One less thing to avoid. 🎉');
+  }
+  save();
+  render();
+}
+
+function snooze(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  task.snoozeCount = (task.snoozeCount || 0) + 1;
+  // Push due date by 1 day
+  if (task.due) {
+    const d = new Date(task.due);
+    d.setDate(d.getDate() + 1);
+    task.due = d.toISOString().split('T')[0];
+  }
+  const msgs = ['Delaying the inevitable.', 'Bold strategy.', 'Again? Really?', 'Future you will handle it.', '💀'];
+  showToast(msgs[Math.min(task.snoozeCount - 1, msgs.length - 1)]);
+  save();
+  render();
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  save();
+  render();
+}
+
+function isOverdue(task) {
+  if (!task.due || task.done) return false;
+  return new Date(task.due) < new Date(new Date().toDateString());
+}
+
+function filteredTasks() {
+  switch (currentFilter) {
+    case 'active': return tasks.filter(t => !t.done);
+    case 'done': return tasks.filter(t => t.done);
+    case 'overdue': return tasks.filter(t => isOverdue(t));
+    case 'high': return tasks.filter(t => t.priority === 'high' && !t.done);
+    default: return tasks;
+  }
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  const ft = filteredTasks();
+
+  if (ft.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <span class="empty-state-icon">∅</span>
+      <p>${currentFilter === 'done' ? 'Nothing completed yet.' : 'Nothing here. Lucky you.'}</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = ft.map(task => {
+    const overdue = isOverdue(task);
+    const dateStr = task.due ? formatDate(task.due) : 'No deadline';
+    return `
+    <div class="task-item priority-${task.priority} ${task.done ? 'done' : ''}">
+      <div class="task-check ${task.done ? 'checked' : ''}" onclick="toggleDone(${task.id})"></div>
+      <div class="task-body">
+        <div class="task-name">${escapeHtml(task.name)}</div>
+        <div class="task-meta">
+          <span class="task-tag tag-${task.priority}">${task.priority}</span>
+          <span class="task-date ${overdue ? 'overdue' : ''}">${overdue ? '⚠ OVERDUE · ' : ''}${dateStr}</span>
+          ${task.snoozeCount > 0 ? `<span class="snooze-count">snoozed ×${task.snoozeCount}</span>` : ''}
+          ${task.snoozeCount >= 3 ? `<span class="procrastination-badge">EXPERT AVOIDER</span>` : ''}
+        </div>
+      </div>
+      <div class="task-actions">
+        ${!task.done ? `<button class="btn-icon snooze" onclick="snooze(${task.id})" title="Snooze">⏱</button>` : ''}
+        <button class="btn-icon" onclick="deleteTask(${task.id})" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── STATS ─────────────────────────────────────────────────────────────────
+function renderStats() {
+  const overdue = tasks.filter(t => isOverdue(t)).length;
+  const snoozed = tasks.reduce((s, t) => s + (t.snoozeCount || 0), 0);
+  const done = tasks.filter(t => t.done).length;
+
+  document.getElementById('stat-overdue').textContent = overdue;
+  document.getElementById('stat-snoozed').textContent = snoozed;
+  document.getElementById('stat-done').textContent = done;
+
+  // Shame score: overdue * 15 + snoozes * 5 - done * 10
+  const active = tasks.filter(t => !t.done).length;
+  let score = 0;
+  if (tasks.length > 0) {
+    score = Math.min(100, Math.round(
+      (overdue * 18 + snoozed * 6) / Math.max(1, tasks.length) * 3
+      - done * 4
+    ));
+    score = Math.max(0, score);
+  }
+
+  document.getElementById('shame-bar').style.width = score + '%';
+  document.getElementById('shame-score').textContent = score;
+
+  const verdict = VERDICTS.slice().reverse().find(v => score >= v[0]);
+  document.getElementById('shame-verdict').textContent = verdict ? verdict[1] : '';
+}
+
+// ─── STREAK ────────────────────────────────────────────────────────────────
+function todayKey() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function renderStreak() {
+  const grid = document.getElementById('streak-grid');
+  const today = todayKey();
+  const days = [];
+  for (let i = 20; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+
+  grid.innerHTML = days.map(day => {
+    const isToday = day === today;
+    const isDone = streakData[day];
+    const label = new Date(day + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'narrow' });
+    return `<div class="streak-day ${isDone ? 'done-day' : ''} ${isToday ? 'today' : ''}" title="${day}">${label}</div>`;
+  }).join('');
+
+  // Calculate streak
+  let streak = 0;
+  let d = new Date();
+  while (true) {
+    const key = d.toISOString().split('T')[0];
+    if (streakData[key]) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+  }
+
+  document.getElementById('streak-count').textContent = streak;
+  document.getElementById('streak-status').textContent = streak === 0 ? 'Start today!' : streak >= 7 ? '🔥 On fire!' : '👍 Keep going';
+}
+
+// ─── CONFESSIONS ───────────────────────────────────────────────────────────
+function addConfession() {
+  const val = document.getElementById('confession-input').value.trim();
+  if (!val) return;
+  confessions.unshift({ text: val, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+  if (confessions.length > 20) confessions.pop();
+  document.getElementById('confession-input').value = '';
+  save();
+  renderConfessions();
+  showToast('Excuse logged. Classic.');
+}
+
+function renderConfessions() {
+  const list = document.getElementById('confession-list');
+  if (confessions.length === 0) {
+    list.innerHTML = '<div style="font-size:0.65rem;color:var(--muted);padding:0.5rem 0;">No excuses yet. There will be.</div>';
+    return;
+  }
+  list.innerHTML = confessions.map(c =>
+    `<div class="confession-item"><span class="c-time">${c.time}</span>${escapeHtml(c.text)}</div>`
+  ).join('');
+}
+
+// ─── QUOTE ─────────────────────────────────────────────────────────────────
+function nextQuote() {
+  quoteIdx = (quoteIdx + 1) % QUOTES.length;
+  const q = QUOTES[quoteIdx];
+  const el = document.getElementById('quote-text');
+  el.style.opacity = 0;
+  setTimeout(() => {
+    el.textContent = q.text;
+    document.getElementById('quote-author').textContent = '— ' + q.author;
+    el.style.opacity = 1;
+    el.style.transition = 'opacity 0.3s';
+  }, 200);
+}
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─── RENDER ────────────────────────────────────────────────────────────────
+function render() {
+  renderTasks();
+  renderStats();
+  renderStreak();
+}
+
+// Expose to global scope so inline onclick attributes can reach them
+window.addTask = addTask;
+window.toggleDone = toggleDone;
+window.snooze = snooze;
+window.deleteTask = deleteTask;
+window.setFilter = setFilter;
+window.nextQuote = nextQuote;
+window.addConfession = addConfession;
+
+// Enter key support
+document.getElementById('task-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+document.getElementById('confession-input').addEventListener('keydown', e => { if (e.key === 'Enter') addConfession(); });
+
+// Set today as default due date option
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('due-date').setAttribute('min', today);
+
+// Init quote
+const initQ = QUOTES[0];
+document.getElementById('quote-text').textContent = initQ.text;
+document.getElementById('quote-author').textContent = '— ' + initQ.author;
+
+// Seed sample tasks if empty
+if (tasks.length === 0) {
+  tasks = [
+    { id: 1, name: 'Reply to all pending emails', priority: 'high', due: today, done: false, snoozeCount: 2, createdAt: new Date().toISOString() },
+    { id: 2, name: 'Actually start that side project', priority: 'medium', due: null, done: false, snoozeCount: 5, createdAt: new Date().toISOString() },
+    { id: 3, name: 'Clean up the workspace', priority: 'low', due: null, done: true, snoozeCount: 0, createdAt: new Date().toISOString() },
+  ];
+  save();
+}
+
+render();
+renderConfessions();
+</script>
+</body>
+</html>
